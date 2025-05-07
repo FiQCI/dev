@@ -2,6 +2,11 @@
 
 ## Site rewrite
 
+### Developer documentation
+
+See [docs/index.md](docs/index.md).
+
+
 ### Tools
 
 - (`asdf` for runtime version management)
