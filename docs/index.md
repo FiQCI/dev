@@ -3,4 +3,4 @@
 - [Description of the structure of the application](structure.md#)
 - [Publishing a blog post](blog_post.md#)
 - [Adding an event](event.md#)
-- [Editing the site cintent](edit_or_add_content.md)
+- [Editing the site content](edit_or_add_content.md)
