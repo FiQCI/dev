@@ -100,7 +100,7 @@ The Liquid layout structure needs to be mirrored in JSX. The ['Home' page](../co
 
 ## Overview: About page
 
-- _Home_
+- _About_
   - **Page Markdown** [about.md](../content/pages/about.md)
   - **Page JSX** [about.md.jsx](../src/pages/about.md.jsx)
     - `<PageLayout />` (_props_ <-- `useJsonApi()`)
@@ -135,7 +135,7 @@ The Liquid layout structure needs to be mirrored in JSX. The ['About' page](../c
 
 ## Overview: Access page
 
-- _Home_
+- _Access_
   - **Page Markdown** [access.md](../content/pages/access.md)
     - `id='access'` 
   - **Page JSX** [access.md.jsx](../src/pages/access.md.jsx)
@@ -169,4 +169,41 @@ The ['base' layout](../content/_layouts/base.html) includes a Liquid template fr
 ### A top-down view
 
 The Liquid layout structure needs to be mirrored in JSX. The ['Access' page](../content/pages/access.md) uses the ['page' layout](../content/_layouts/page.html). The [JSX file for the 'Access' page](../src/pages/access.md.jsx) thus imports `PageLayout`, fetches the theme constants and passes them down to `PageLayout` as props. The ['Page' layout](../content/_layouts/page.html.jsx) includes (using [react/root.html](../content/_includes/react/root.html)) some React components. The 'page' layout itself has `layout: base` defined in its front matter, so in the [corresponding JSX file](../src/layouts/home.html.jsx), `BaseLayout` is imported and the props are passed on to it.
+
+## Overview: Events page
+
+- _Events_
+  - **Page Markdown** [events.md](../content/pages/events.md)
+    - `id='events'` 
+  - **Page JSX** [events.md.jsx](../src/pages/events.md.jsx)
+    - `<PageLayout />` (_props_ <-- `useJsonApi()`)
+    - `<Events />` (createPortal `id='events'`)
+    - **`<EventsPage />` (createRoot `id='react-root'`)**
+  - **Liquid layout** [page.html](../content/_layouts/page.html)
+    - `id='banner'`
+    - `id='breadcrumbs'`
+    - **Liquid layout** [base.html](../content/_layouts/base.html)
+      - **`id='react-root'`**
+      - `id='navigation-header'`
+      - `id='footer'`
+  - **Layout JSX** [page.html.jsx](../src/layouts/page.html.jsx)
+    - `<BaseLayout />` (_props_ <-- `<PageLayout />`)
+    - `<Banner />` (createPortal `id='banner'`)
+    - `<Breadcrumbs />` (createPortal `id='breadcrumbs'`)
+    - **Layout JSX** [base.html.jsx](../src/layouts/base.html.jsx)
+      - `<Analytics />`
+      - `<NavigationHeader />` (createPortal `id='navigation-header'`)
+      - `<Footer />` (createPortal `id='footer'`)
+
+
+### A bottom-up view
+
+The base layout contains the page header, the page footer and the analytics component, since these should exist on every page of the site. The page _layout_ adds the Banner and Breadcrumbs components.
+
+The ['base' layout](../content/_layouts/base.html) includes a Liquid template fragment with `id='react-root'`. This `id` is used in the JSX file for a **page** with React components (`react: true` included in the front matter) to establish the React root element with `createRoot`. Any additional React components are then inserted onto the page (or layout) by using `createPortal`. A page that does not have `react: true` in its front matter uses [default.jsx](../src/pages/default.jsx) by default.
+
+
+### A top-down view
+
+The Liquid layout structure needs to be mirrored in JSX. The ['Events' page](../content/pages/events.md) uses the ['page' layout](../content/_layouts/page.html). The [JSX file for the 'Events' page](../src/pages/events.md.jsx) thus imports `PageLayout`, fetches the theme constants and passes them down to `PageLayout` as props. The ['Page' layout](../content/_layouts/page.html.jsx) includes (using [react/root.html](../content/_includes/react/root.html)) some React components. The 'page' layout itself has `layout: base` defined in its front matter, so in the [corresponding JSX file](../src/layouts/home.html.jsx), `BaseLayout` is imported and the props are passed on to it.
 
