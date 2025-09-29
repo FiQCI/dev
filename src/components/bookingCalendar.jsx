@@ -208,6 +208,7 @@ const BookingCalendar = (props) => {
                             ]}
                             placeholder='Device'
                             onChangeValue={handleFilterChange}
+                            key={`device-select-${props.isModalOpen}`}
                         />
                     </div>
                     <div className="flex flex-row gap-2">
@@ -223,6 +224,7 @@ const BookingCalendar = (props) => {
                             ]}
                             placeholder='View'
                             onChangeValue={handleViewChange}
+                            key={`view-select-${props.isModalOpen}`}
                         />
                     </div>
 
@@ -233,7 +235,7 @@ const BookingCalendar = (props) => {
                         <p>Partially Reserved</p>
                     </div>
                     <div className="min-[820px]:flex hidden flex-row gap-2">
-                        <div className="bg-[#004E84] border border-1 border-gray-600 self-center w-[15px] h-[15px]" ></div>
+                        <div className="bg-[#006edc] border border-1 border-gray-600 self-center w-[15px] h-[15px]" ></div>
                         <p>Selected Day</p>
                     </div>
                     <div className="min-[820px]:flex hidden flex-row gap-2">
