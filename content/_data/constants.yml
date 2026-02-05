@@ -262,6 +262,12 @@ cookie_consent:
       basis: "PRX, CZ"
       topology: "Square grid"
       device_id: "Q50"
+    
+    - name: Aalto Q20
+      qubits: 20
+      basis: "PRX, CZ"
+      topology: "Square grid"
+      device_id: "Q20"
 
 "/cookies/":
   title: Cookie Policy
