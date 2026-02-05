@@ -4,6 +4,7 @@ import { useCalibration } from '../../hooks/useCalibration';
 import { useDeviceInfo } from '../../hooks/useDeviceInfo';
 import { HelmiLayout } from '../QcLayouts/Helmi';
 import { Q50Layout } from '../QcLayouts/Q50';
+import { Q20Layout } from '../QcLayouts/Q20';
 import { Overview } from './StatusOverview';
 import { CalibrationTable } from './CalibrationTable';
 import { SideBar } from './SideBar';
@@ -16,8 +17,8 @@ import { object } from 'framer-motion/client';
 
 export const ModalContent = (props) => {
 
-    const { calibrationData: calibrationDataAll, calibrationError } = useCalibration(`https://fiqci-backend.2.rahtiapp.fi/device/${props.device_id.toLowerCase()}/calibration`)
-    const { deviceInfo: deviceInfoData, infoError } = useDeviceInfo(`https://fiqci-backend.2.rahtiapp.fi/device/${props.device_id.toLowerCase()}`)
+    const { calibrationData: calibrationDataAll, calibrationError } = useCalibration(`http://127.0.0.1:3000/device/${props.device_id.toLowerCase()}/calibration`)
+    const { deviceInfo: deviceInfoData, infoError } = useDeviceInfo(`http://127.0.0.1:3000/device/${props.device_id.toLowerCase()}`)
 
     const [activeTab, setActiveTab] = useState('overview');
 
@@ -58,6 +59,7 @@ export const ModalContent = (props) => {
 
             //gate fidelity
             { name: 'PRX Gate Fidelity', value: 'prx_rb_fidelity' },
+            { name: 'Clifford Gate Fidelity', value: 'clifford_rb_fidelity' },
 
             //Q50 readout metrics
             //Helmi: does not exist
@@ -73,10 +75,10 @@ export const ModalContent = (props) => {
 
             //Q50: destructiveness of measurement metrics
             //Helmi: does not exist
-            { name: 'QNDness Fidelity', value: 'measure_qndness_fidelity', title: 'QND = Quantum Non-Demolition'},
-            { name: 'QNDness 0 State', value: 'measure_qndness_qndness_0', title: 'QND = Quantum Non-Demolition'},
-            { name: 'QNDness 1 State', value: 'measure_qndness_qndness_1', title: 'QND = Quantum Non-Demolition'},
-            { name: 'QNDness Repeatability', value: 'measure_qndness_repeatability', title: 'QND = Quantum Non-Demolition'},
+            { name: 'QNDness Fidelity', value: 'measure_qndness_fidelity', title: 'QND = Quantum Non-Demolition' },
+            { name: 'QNDness 0 State', value: 'measure_qndness_qndness_0', title: 'QND = Quantum Non-Demolition' },
+            { name: 'QNDness 1 State', value: 'measure_qndness_qndness_1', title: 'QND = Quantum Non-Demolition' },
+            { name: 'QNDness Repeatability', value: 'measure_qndness_repeatability', title: 'QND = Quantum Non-Demolition' },
 
         ]
 
@@ -89,6 +91,7 @@ export const ModalContent = (props) => {
     const couplerMetricOptions = [
         { name: 'CZ Gate Fidelity', value: 'cz_irb_fidelity' },
         { name: 'Clifford Gate Fidelity', value: 'clifford_rb_fidelity' },
+
     ]
 
     return (
@@ -136,6 +139,16 @@ export const ModalContent = (props) => {
                                 <div className='flex justify-center items-center w-full'>
                                     {props.device_id.toLowerCase() === 'q50' ? (
                                         <Q50Layout
+                                            calibrationData={calibrationData}
+                                            qubitMetric={metricsState.qubitMetric}
+                                            couplerMetric={metricsState.couplerMetric}
+                                            qubitMetricFormatted={qubitMetricOptions.find(m => m.value === metricsState.qubitMetric)?.name || metricsState.qubitMetric}
+                                            couplerMetricFormatted={couplerMetricOptions.find(m => m.value === metricsState.couplerMetric)?.name || metricsState.couplerMetric}
+                                            thresholdQubit={metricsState.thresholdQubitValue}
+                                            thresholdCoupler={metricsState.thresholdCouplerValue}
+                                        />
+                                    ) : props.device_id.toLowerCase() === 'q20' ? (
+                                        <Q20Layout
                                             calibrationData={calibrationData}
                                             qubitMetric={metricsState.qubitMetric}
                                             couplerMetric={metricsState.couplerMetric}
