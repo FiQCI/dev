@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { getColorForMetricValue } from '../../utils/generateGradient';
 import { formatMetricValue } from '../../utils/formatMetricValue';
+import { getMetricStatistics } from '../../utils/sidebarUtils';
 
 export function BaseQcLayout({ rawNodes, edges, spacing, calibrationData, qubitMetric, couplerMetric,
     qubitMetricFormatted, couplerMetricFormatted, thresholdQubit, thresholdCoupler }) {
@@ -11,47 +12,6 @@ export function BaseQcLayout({ rawNodes, edges, spacing, calibrationData, qubitM
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [tooltip, setTooltip] = useState(null);
     const containerRef = useRef(null);
-
-
-    // Calculate metric statistics for qubit metrics
-    const getQubitMetricStats = () => {
-        if (!calibrationData || !qubitMetric || !calibrationData[qubitMetric]) {
-            return null;
-        }
-
-        const values = Object.values(calibrationData[qubitMetric])
-            .map(data => data?.value)
-            .filter(value => value !== null && value !== undefined);
-
-        if (values.length === 0) return null;
-
-        const sortedValues = [...values].sort((a, b) => a - b);
-        const worst = sortedValues[0];
-        const best = sortedValues[sortedValues.length - 1];
-        const average = calibrationData[qubitMetric].statistics.median;
-
-        return { worst, best, average };
-    };
-
-    // Calculate metric statistics for coupler metrics
-    const getCouplerMetricStats = () => {
-        if (!calibrationData || !couplerMetric || !calibrationData[couplerMetric]) {
-            return null;
-        }
-
-        const values = Object.values(calibrationData[couplerMetric])
-            .map(data => data?.value)
-            .filter(value => value !== null && value !== undefined);
-
-        if (values.length === 0) return null;
-
-        const sortedValues = [...values].sort((a, b) => a - b);
-        const worst = sortedValues[0];
-        const best = sortedValues[sortedValues.length - 1];
-        const average = calibrationData[couplerMetric].statistics.median;
-
-        return { worst, best, average };
-    };
 
     // Get metric value for a specific qubit
     const getQubitMetricValue = (qubitId) => {
@@ -90,7 +50,7 @@ export function BaseQcLayout({ rawNodes, edges, spacing, calibrationData, qubitM
             return '#888888';
         }
 
-        const stats = getQubitMetricStats();
+        const stats = getMetricStatistics(calibrationData, qubitMetric, 1);
         if (!stats) {
             return '#888888';
         }
@@ -161,7 +121,7 @@ export function BaseQcLayout({ rawNodes, edges, spacing, calibrationData, qubitM
             return '#888888'; // Grey if no data found
         }
 
-        const stats = getCouplerMetricStats();
+        const stats = getMetricStatistics(calibrationData, couplerMetric, 2);
         if (!stats) {
             return '#888888';
         }
