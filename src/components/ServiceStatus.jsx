@@ -40,7 +40,7 @@ const StatusCard = (props) => {
 }
 
 export const ServiceStatus = (props) => {
-  const { status: statusList } = useStatus("https://fiqci-backend.2.rahtiapp.fi/devices/healthcheck");
+  const { status: statusList } = useStatus("http://127.0.0.1:3000/devices/healthcheck");
   const { bookingData: bookingData } = useBookings("https://fiqci-backend.2.rahtiapp.fi/bookings")
   const qcs = props["quantum-computers"] || [];
 
