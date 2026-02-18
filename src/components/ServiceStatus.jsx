@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 
 import { useStatus } from '../hooks/useStatus'
 import { useBookings } from '../hooks/useBookings.jsx';
 import { mdiInformation, mdiClose, mdiAlert } from '@mdi/js';
-import { CCard, CCardTitle, CCardContent, CIcon, CButton } from '@cscfi/csc-ui-react';
+import { CCard, CCardTitle, CCardContent, CIcon, CButton, CSelect } from '@cscfi/csc-ui-react';
 import { StatusModal } from './StatusModal/StatusModal';
 import { BookingModal } from './bookingCalendar.jsx';
 
@@ -44,19 +44,47 @@ export const ServiceStatus = (props) => {
   const { bookingData: bookingData } = useBookings("https://fiqci-backend.2.rahtiapp.fi/bookings")
   const qcs = props["quantum-computers"] || [];
 
-  const devicesWithStatus = (qcs.length === 0 || !Array.isArray(statusList))
-    ? qcs
-    : qcs.map(device => {
+  const devicesWithStatus = useMemo(() => {
+    return (qcs.length === 0 || !Array.isArray(statusList))
+      ? qcs
+      : qcs.map(device => {
         const deviceStatus = statusList.find(({ name }) => name === device.device_id);
         return {
           ...device,
           health: deviceStatus?.health ?? false,
         };
       });
-  
+  }, [qcs, statusList]);
+
   const [bookingModalOpen, setBookingModalOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false);
   const [modalProps, setModalProps] = useState({});
+  const [sort, setSort] = useState("status")
+  const [sortedDevices, setSortedDevices] = useState(devicesWithStatus);
+
+    useEffect(() => {
+    let soted = devicesWithStatus;
+    if (sort === 'status') {
+      soted = [...devicesWithStatus].sort((a, b) => (b.health === a.health) ? b.qubits - a.qubits : b.health ? 1 : -1);
+    } else if (sort === 'least_qubits') {
+      soted = [...devicesWithStatus].sort((a, b) => a.qubits - b.qubits);
+    } else if (sort === 'most_qubits') {
+      soted = [...devicesWithStatus].sort((a, b) => b.qubits - a.qubits);
+    } else if (sort === 'host') {
+      soted = [...devicesWithStatus].sort((a, b) => {
+        const hostAName = a.name.split(" ")[0];
+        const hostBName = b.name.split(" ")[0];
+        const nameCompare = hostAName.localeCompare(hostBName);
+        return nameCompare !== 0 ? nameCompare : b.qubits - a.qubits;
+      });
+    }
+    setSortedDevices(soted);
+  }, [devicesWithStatus, sort]);
+
+  const handleSortChange = useCallback(selectedSort => {
+    setSort(selectedSort.detail || 'status');
+  }, []);
+
   const handleCardClick = (qc) => {
     setModalProps({ ...qc, devicesWithStatus });
     setModalOpen(true);
@@ -94,19 +122,38 @@ export const ServiceStatus = (props) => {
       <div className='pt-[24px] flex flex-col gap-6 mb-6 justify-start'>
         <h2 className='text-on-white'>Reservations</h2>
         <p>
-          VTT devices can at times be reserved. At these times the queue will be paused. 
+          VTT devices can at times be reserved. At these times the queue will be paused.
           Reservations can be viewed from this calendar. Note that making reservations through FiQCI is not currently possible.
         </p>
         <CButton className='w-32' onClick={() => setBookingModalOpen(true)}>View Reservations</CButton>
       </div>
-      
-      <h2 className='text-on-white'>Devices</h2>
+
+      <div className='flex flex-col sm:flex-row gap-8'>
+        <h2 className='text-on-white'>Devices</h2>
+        <CSelect
+          hideDetails={true}
+          label={"Sort"}
+          className='w-40'
+          clearable
+          value={sort}
+          items={[
+            { name: 'Status', value: 'status' },
+            { name: 'Least qubits', value: 'least_qubits' },
+            { name: 'Most qubits', value: 'most_qubits' },
+            { name: 'Host', value: 'host' },
+          ]}
+          placeholder='Sort'
+          onChangeValue={handleSortChange}
+          key={`device-sort`}
+        />
+      </div>
+
       <div className='pb-[60px] grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2600px]:grid-cols-4 w-full gap-[24px]'>
-        {devicesWithStatus.map((qc, index) => (
+        {sortedDevices.map((qc, index) => (
           <StatusCard key={qc.device_id || index} {...qc} onClick={() => handleCardClick(qc)} />
         ))}
-        
-        
+
+
       </div>
       {bookingModalOpen && (
         <BookingModal bookingData={bookingData} name={"Reservations"} isModalOpen={bookingModalOpen} setIsModalOpen={setBookingModalOpen} />
@@ -115,7 +162,7 @@ export const ServiceStatus = (props) => {
       {modalOpen && (
         <StatusModal {...modalProps} isModalOpen={modalOpen} setIsModalOpen={setModalOpen} />
       )}
-      
+
     </div>
   );
 }
