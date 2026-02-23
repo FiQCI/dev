@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { useStatus } from '../hooks/useStatus'
 import { useBookings } from '../hooks/useBookings.jsx';
@@ -6,6 +6,9 @@ import { mdiInformation, mdiClose, mdiAlert } from '@mdi/js';
 import { CCard, CCardTitle, CCardContent, CIcon, CButton } from '@cscfi/csc-ui-react';
 import { StatusModal } from './StatusModal/StatusModal';
 import { BookingModal } from './bookingCalendar.jsx';
+import { set } from 'date-fns';
+
+import { API_BASE_URL } from '../config/api';
 
 const StatusCard = (props) => {
   const isOnline = props.health;
@@ -24,14 +27,20 @@ const StatusCard = (props) => {
 
         <div className='flex flex-col gap-0 text-[14px]'>
           <strong>Service status:</strong>
-          {isOnline ? (
-            <div className='text-center text-[#204303] bg-[#B9DC9C] border-[0.5px] border-[#204303] rounded-[100px] w-[88px] h-[25px]'>
-              <p className='font-bold text-[14px]'>Online</p>
+          {(props.device_status === "booked") ? (
+            <div className='text-center text-[#ae4000] bg-[#ffb66d] border-[0.5px] border-[#ae4000] rounded-[100px] w-[88px] h-[25px]'>
+              <p className='font-bold text-[14px]'>Booked</p>
             </div>
           ) : (
-            <div className='text-center text-[#7E0707] bg-[#F8CECE] border-[0.5px] border-[#7E0707] rounded-[100px] w-[88px] h-[25px]'>
-              <p className='font-bold text-[14px]'>Offline</p>
-            </div>
+            isOnline ? (
+              <div className='text-center text-[#204303] bg-[#B9DC9C] border-[0.5px] border-[#204303] rounded-[100px] w-[88px] h-[25px]'>
+                <p className='font-bold text-[14px]'>Online</p>
+              </div>
+            ) : (
+              <div className='text-center text-[#7E0707] bg-[#F8CECE] border-[0.5px] border-[#7E0707] rounded-[100px] w-[88px] h-[25px]'>
+                <p className='font-bold text-[14px]'>Offline</p>
+              </div>
+            )
           )}
         </div>
       </CCardContent>
@@ -40,25 +49,51 @@ const StatusCard = (props) => {
 }
 
 export const ServiceStatus = (props) => {
-  const { status: statusList } = useStatus("https://fiqci-backend.2.rahtiapp.fi/devices/healthcheck");
-  const { bookingData: bookingData } = useBookings("https://fiqci-backend.2.rahtiapp.fi/bookings")
+  const { status: statusList } = useStatus(`${API_BASE_URL}/devices/healthcheck`);
+  const { bookingData: bookingData } = useBookings(`${API_BASE_URL}/bookings`)
   const qcs = props["quantum-computers"] || [];
 
-  const devicesWithStatus = (qcs.length === 0 || !Array.isArray(statusList))
-    ? qcs
-    : qcs.map(device => {
+  const [device_status_list, setDeviceStatusList] = useState([]);
+  const [devicesWithStatus, setDevicesWithStatus] = useState([]);
+
+  useEffect(() => {
+    // Compute devicesWithStatus inside the effect
+    const devicesWithStatus = (qcs.length === 0 || !Array.isArray(statusList))
+      ? qcs
+      : qcs.map(device => {
         const deviceStatus = statusList.find(({ name }) => name === device.device_id);
         return {
           ...device,
           health: deviceStatus?.health ?? false,
         };
       });
-  
+
+    setDevicesWithStatus(devicesWithStatus);
+
+    if (!devicesWithStatus || devicesWithStatus.length === 0) {
+      setDeviceStatusList([]);
+      return;
+    }
+
+    const deviceStatusList = devicesWithStatus.map(async device => {
+      const url = `${API_BASE_URL}/device/${device.device_id.toLowerCase()}`;
+      const data = await fetch(url)
+        .then(resp => resp.json())
+        .then(result => result?.data || {})
+      return { ...device, device_status: data.status };
+    });
+    Promise.all(deviceStatusList).then(results => {
+      setDeviceStatusList(results);
+    });
+  }, [qcs, statusList]);
+
+
+
   const [bookingModalOpen, setBookingModalOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false);
   const [modalProps, setModalProps] = useState({});
   const handleCardClick = (qc) => {
-    setModalProps({ ...qc, devicesWithStatus });
+    setModalProps({ ...qc, devicesWithStatus: device_status_list });
     setModalOpen(true);
   };
   // Determine alert color based on props.alert.type
@@ -94,19 +129,19 @@ export const ServiceStatus = (props) => {
       <div className='pt-[24px] flex flex-col gap-6 mb-6 justify-start'>
         <h2 className='text-on-white'>Reservations</h2>
         <p>
-          VTT devices can at times be reserved. At these times the queue will be paused. 
+          VTT devices can at times be reserved. At these times the queue will be paused.
           Reservations can be viewed from this calendar. Note that making reservations through FiQCI is not currently possible.
         </p>
         <CButton className='w-32' onClick={() => setBookingModalOpen(true)}>View Reservations</CButton>
       </div>
-      
+
       <h2 className='text-on-white'>Devices</h2>
       <div className='pb-[60px] grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2600px]:grid-cols-4 w-full gap-[24px]'>
-        {devicesWithStatus.map((qc, index) => (
+        {(device_status_list.length > 0 ? device_status_list : devicesWithStatus).map((qc, index) => (
           <StatusCard key={qc.device_id || index} {...qc} onClick={() => handleCardClick(qc)} />
         ))}
-        
-        
+
+
       </div>
       {bookingModalOpen && (
         <BookingModal bookingData={bookingData} name={"Reservations"} isModalOpen={bookingModalOpen} setIsModalOpen={setBookingModalOpen} />
@@ -115,7 +150,7 @@ export const ServiceStatus = (props) => {
       {modalOpen && (
         <StatusModal {...modalProps} isModalOpen={modalOpen} setIsModalOpen={setModalOpen} />
       )}
-      
+
     </div>
   );
 }
