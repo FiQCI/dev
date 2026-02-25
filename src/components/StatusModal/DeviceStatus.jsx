@@ -5,7 +5,7 @@ export const DeviceStatus = (props) => {
 
   const { deviceData, devicesWithStatus } = props;
 
-  const status_options = ["offline", "online", "healthy"]
+  const status_options = ["offline", "online", "healthy", "unknown"]
 
   return (
     <>

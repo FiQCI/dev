@@ -15,7 +15,7 @@ const StatusCard = (props) => {
   const isOnline = props.health;
   const { onClick, ...rest } = props
 
-  const status_options = ["offline", "online", "healthy"]
+  const status_options = ["offline", "online", "healthy", "unknown"]
 
   return (
     <CCard onClick={onClick} className='border-[0.2px] border-gray-100 rounded-none shadow-md hover:shadow-xl col-span-1 h-[236px]'>
@@ -114,7 +114,7 @@ export const ServiceStatus = (props) => {
   const [modalProps, setModalProps] = useState({});
   const handleCardClick = (qc) => {
 
-    const add_device_status = devicesWithStatus.map(d => d.device_id.toLowerCase() === qc.device_id.toLowerCase() ? { ...d, device_status: device_status_list[qc.device_id.toLowerCase()] } : d); 
+    const add_device_status = devicesWithStatus.map(d => d.device_id.toLowerCase() === qc.device_id.toLowerCase() ? { ...d, device_status: device_status_list?.[qc.device_id.toLowerCase()] || "unknown" } : d); 
 
     setModalProps({ ...qc, devicesWithStatus: add_device_status.find(d => d.device_id.toLowerCase() === qc.device_id.toLowerCase()) });
     setModalOpen(true);
@@ -165,7 +165,7 @@ export const ServiceStatus = (props) => {
             key={qc.device_id || index}
             {...{
               ...qc,
-              device_status: device_status_list[qc.device_id.toLowerCase()]
+              device_status: device_status_list?.[qc.device_id.toLowerCase()] || "unknown"
             }}
             onClick={() => handleCardClick(qc)}
           />
