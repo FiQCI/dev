@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 import { useStatus } from '../hooks/useStatus'
 import { useBookings } from '../hooks/useBookings.jsx';
@@ -7,12 +7,16 @@ import { CCard, CCardTitle, CCardContent, CIcon, CButton } from '@cscfi/csc-ui-r
 import { StatusModal } from './StatusModal/StatusModal';
 import { BookingModal } from './bookingCalendar.jsx';
 import { set } from 'date-fns';
+import { capitalizeFirstLetter } from '../utils/textUtils.js';
 
 import { API_BASE_URL } from '../config/api';
 
 const StatusCard = (props) => {
   const isOnline = props.health;
   const { onClick, ...rest } = props
+
+  const status_options = ["offline", "online", "healthy"]
+
   return (
     <CCard onClick={onClick} className='border-[0.2px] border-gray-100 rounded-none shadow-md hover:shadow-xl col-span-1 h-[236px]'>
       <CCardTitle className='font-bold text-on-white text-[18px]'>
@@ -27,9 +31,9 @@ const StatusCard = (props) => {
 
         <div className='flex flex-col gap-0 text-[14px]'>
           <strong>Service status:</strong>
-          {(props.device_status === "booked") ? (
+          {(props.device_status && !status_options.includes(props.device_status)) ? (
             <div className='text-center text-[#ae4000] bg-[#ffb66d] border-[0.5px] border-[#ae4000] rounded-[100px] w-[88px] h-[25px]'>
-              <p className='font-bold text-[14px]'>Booked</p>
+              <p className='font-bold text-[14px]'>{capitalizeFirstLetter(props.device_status)}</p>
             </div>
           ) : (
             isOnline ? (
@@ -51,49 +55,68 @@ const StatusCard = (props) => {
 export const ServiceStatus = (props) => {
   const { status: statusList } = useStatus(`${API_BASE_URL}/devices/healthcheck`);
   const { bookingData: bookingData } = useBookings(`${API_BASE_URL}/bookings`)
-  const qcs = props["quantum-computers"] || [];
+  const qcs = Array.isArray(props["quantum-computers"]) ? props["quantum-computers"] : [];
+  const qcsKey = useMemo(
+    () => qcs.map(d => d?.device_id?.toLowerCase()).filter(Boolean).sort().join('|'),
+    [qcs]
+  );
 
   const [device_status_list, setDeviceStatusList] = useState([]);
-  const [devicesWithStatus, setDevicesWithStatus] = useState([]);
+
+  const devicesWithStatus = (qcs.length === 0 || !Array.isArray(statusList))
+    ? qcs
+    : qcs.map(device => {
+      const deviceStatus = statusList.find(({ name }) => name === device.device_id);
+      return {
+        ...device,
+        health: deviceStatus?.health ?? false,
+      };
+    });
 
   useEffect(() => {
-    // Compute devicesWithStatus inside the effect
-    const devicesWithStatus = (qcs.length === 0 || !Array.isArray(statusList))
-      ? qcs
-      : qcs.map(device => {
-        const deviceStatus = statusList.find(({ name }) => name === device.device_id);
-        return {
-          ...device,
-          health: deviceStatus?.health ?? false,
-        };
+  let cancelled = false;
+
+  if (!qcs.length) {
+    setDeviceStatusList({});
+    return;
+  }
+
+  // reset for current device set
+  setDeviceStatusList({});
+
+  qcs.forEach((device) => {
+    const id = device.device_id.toLowerCase();
+    fetch(`${API_BASE_URL}/device/${id}`)
+      .then((resp) => resp.json())
+      .then((result) => result?.data?.status)
+      .then((status) => {
+        if (cancelled) return;
+        setDeviceStatusList((prev) =>
+          prev[id] === status ? prev : { ...prev, [id]: status }
+        );
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDeviceStatusList((prev) =>
+          prev[id] === 'unknown' ? prev : { ...prev, [id]: 'unknown' }
+        );
       });
+  });
 
-    setDevicesWithStatus(devicesWithStatus);
-
-    if (!devicesWithStatus || devicesWithStatus.length === 0) {
-      setDeviceStatusList([]);
-      return;
-    }
-
-    const deviceStatusList = devicesWithStatus.map(async device => {
-      const url = `${API_BASE_URL}/device/${device.device_id.toLowerCase()}`;
-      const data = await fetch(url)
-        .then(resp => resp.json())
-        .then(result => result?.data || {})
-      return { ...device, device_status: data.status };
-    });
-    Promise.all(deviceStatusList).then(results => {
-      setDeviceStatusList(results);
-    });
-  }, [qcs, statusList]);
-
+  return () => {
+    cancelled = true;
+  };
+}, [qcsKey]);
 
 
   const [bookingModalOpen, setBookingModalOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false);
   const [modalProps, setModalProps] = useState({});
   const handleCardClick = (qc) => {
-    setModalProps({ ...qc, devicesWithStatus: device_status_list });
+
+    const add_device_status = devicesWithStatus.map(d => d.device_id.toLowerCase() === qc.device_id.toLowerCase() ? { ...d, device_status: device_status_list[qc.device_id.toLowerCase()] } : d); 
+
+    setModalProps({ ...qc, devicesWithStatus: add_device_status.find(d => d.device_id.toLowerCase() === qc.device_id.toLowerCase()) });
     setModalOpen(true);
   };
   // Determine alert color based on props.alert.type
@@ -137,8 +160,15 @@ export const ServiceStatus = (props) => {
 
       <h2 className='text-on-white'>Devices</h2>
       <div className='pb-[60px] grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2600px]:grid-cols-4 w-full gap-[24px]'>
-        {(device_status_list.length > 0 ? device_status_list : devicesWithStatus).map((qc, index) => (
-          <StatusCard key={qc.device_id || index} {...qc} onClick={() => handleCardClick(qc)} />
+        {devicesWithStatus.map((qc, index) => (
+          <StatusCard
+            key={qc.device_id || index}
+            {...{
+              ...qc,
+              device_status: device_status_list[qc.device_id.toLowerCase()]
+            }}
+            onClick={() => handleCardClick(qc)}
+          />
         ))}
 
 
