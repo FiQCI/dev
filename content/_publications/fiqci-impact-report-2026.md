@@ -247,6 +247,16 @@ Quantitative indicators over the reporting period (2022–2025) are summarised i
 
 **Table 1.** Quantitative indicators for FiQCI RRF-period (2022–2025). The QPU resource accounting follow-up includes consumption during the period for when resource usage accounting was in place (2023–2025).
 
+<div style="background-color:#4472C4; color:#FFFFFF; padding:0.5em 0.8em; margin:1.5em 0 0.5em 0; border-radius:2px;">
+  <strong style="text-transform:uppercase; letter-spacing:0.05em; font-size:1.05em;">8. Outlook</strong>
+</div>
+
+FiQCI has provided a strong and credible starting point for hybrid HPC+QC in Finland and Europe. It has moved quantum computing from isolated experiments into an operational, documented service connected to supercomputing capacity, with defined access processes and a growing user and training base. Continued development of this shared infrastructure is crucial as Finland and Europe want to remain among the leading environments for developing, benchmarking, and deploying quantum-accelerated workflows. Competition is increasingly shaped not only by hardware development, but by service maturity, software ecosystems, user enablement, and the ability to integrate new compute resources quickly and efficiently.
+
+Next, two technical directions would be particularly important to incorporate systematically into the infrastructure. First, AI-enabled operations and software can improve the usability and efficiency of hybrid computing by for example automating and optimising quantum software compilation in a hardware-aware manner and error mitigation in post-processing. This helps users spend more time on research questions and less on operational friction. 
+
+Second, FiQCI should prepare for the transition from the noisy devices of today towards quantum error correction (QEC) by building QEC-ready workflows. This includes tooling for error-aware resource estimation, interfaces for running and analysing error-correcting codes and decoders that can require substantial classical compute resources, and integration models that can utilise upcoming, more error-resilient logical qubits to be used through the same overall service platform. Investing now in these AI and QEC capabilities strengthens Europe’s readiness for the first instances of quantum advantage. When capability breakthroughs arrive, the surrounding infrastructure is already able to translate them into broadly usable and societally relevant outcomes.
+
 ---
 
 <div style="display:flex; align-items:center; gap:2em; margin:1.5em 0; flex-wrap:wrap;">
