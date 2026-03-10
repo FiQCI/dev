@@ -1,6 +1,6 @@
 ---
 title: "FiQCI RRF Impact Report 2022-2025"
-date: 2026-02-27
+date: 2026-03-10
 collection: publications
 header:
   teaser: /assets/images/fiqci-impact-report-2026/1qubit.webp
