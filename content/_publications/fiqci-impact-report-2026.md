@@ -1,5 +1,5 @@
 ---
-title: "FiQCI Impact Report: Building Finland's Hybrid High-Performance Quantum Computing Capability"
+title: "FiQCI RRF Impact Report 2022-2025"
 date: 2026-02-27
 collection: publications
 header:
@@ -22,12 +22,15 @@ filters:
 
 <img src="/assets/images/FiQCI-banner.webp" alt="FiQCI Impact Report banner" style="width:100%; max-width:100%; display:block; margin-bottom:1.5em;" />
 
-<h1 style="font-size:1.6em; font-weight:bold; margin-bottom:0.25em;">Impact Report: Building Finland's hybrid high-performance quantum computing capability through the Finnish Quantum-Computing Infrastructure (FiQCI)</h1>
+<h1 style="font-size:1.6em; font-weight:bold; margin-bottom:0.25em;">RRF Impact Report: Building Finland's hybrid high-performance quantum computing capability through the Finnish Quantum-Computing Infrastructure (FiQCI)</h1>
+
+This report was written for the Research Council of Finland RRF Impact Report series 2026. It describes the RRF funded activities and context of FiQCI during the period 2022-2025. The project received funding from the European Union – NextGenerationEU instrument and was funded by the Research Council of Finland under grant number 346146.
+
+The PDF version of the report can be downloaded here.
 
 | | |
 |---|---|
 | **Project** | Finnish Quantum-Computing Infrastructure (FiQCI) |
-| **Academy of Finland decision number** | 346146 |
 | **Funding period** | 1.1.2022–31.12.2024/31.12.2025 |
 | **Funding context** | European Union Recovery and Resilience Facility (RRF) funding via the Research Council of Finland |
 | **Infrastructure consortium partners** | CSC – IT Center for Science, VTT Technical Research Centre of Finland, Aalto University |
