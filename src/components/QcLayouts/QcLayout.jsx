@@ -20,8 +20,9 @@ export function QcLayout({ layout, metrics }) {
     // lattice layouts render them as 45°-rotated diamonds.
     const nodeRotation = resonator ? 0 : 45;
     const {
-        calibrationData, qubitMetric, couplerMetric,
-        qubitMetricFormatted, couplerMetricFormatted, thresholdQubit, thresholdCoupler,
+        calibrationData, qubitMetric, couplerMetric, resonatorMetric,
+        qubitMetricFormatted, couplerMetricFormatted, resonatorMetricFormatted,
+        thresholdQubit, thresholdCoupler, thresholdResonator,
     } = metrics;
 
     const [hoveredNode, setHoveredNode] = useState(null);
@@ -49,10 +50,10 @@ export function QcLayout({ layout, metrics }) {
         return `${b}__${a}`;
     };
 
-    // Color for a metric value. dim: 1 = qubit, 2 = coupler.
+    // Color for a metric value. dim: 1 = qubit, 2 = coupler, 3 = resonator.
     const getColor = (metric, id, dim, threshold) => {
-        // No metric selected: qubits get the brand blue, couplers a light grey
-        if (!metric || metric === '') return dim === 1 ? DEFAULT_NODE_COLOR : '#aaa';
+        // No metric selected: qubits/resonator get the brand blue, couplers a light grey
+        if (!metric || metric === '') return dim === 2 ? '#aaa' : DEFAULT_NODE_COLOR;
         if (!calibrationData || !calibrationData[metric]) return GREY;
 
         const value = getMetricValue(metric, id);
@@ -121,26 +122,30 @@ export function QcLayout({ layout, metrics }) {
             tooltipHeight = 70; // rough estimate
         }
 
-        // Calculate absolute position on screen
-        const absoluteX = containerRect.left + mousePos.x;
-        const absoluteY = containerRect.top + mousePos.y;
-
         let left = mousePos.x + 8;
         let top = mousePos.y + 8;
 
-        // Check right boundary against viewport
-        if (absoluteX + 8 + tooltipWidth > viewportWidth) {
-            left = mousePos.x - tooltipWidth - 8; // Position to the left of cursor
+        // Horizontal: keep the tooltip's right edge within the layout area so it
+        // never spills past the right edge. If it would, flip it to the left of
+        // the cursor; never let it run off the left of the viewport.
+        const maxLeft = containerRect.width - tooltipWidth - 8; // relative to container
+        if (left > maxLeft) {
+            left = mousePos.x - tooltipWidth - 8; // flip to the left of the cursor
         }
+        const minLeft = 8 - containerRect.left; // viewport left, relative to container
+        left = Math.min(left, maxLeft);
+        left = Math.max(left, minLeft);
 
-        // Check bottom boundary against viewport
-        if (absoluteY + 8 + tooltipHeight > viewportHeight) {
-            top = mousePos.y - tooltipHeight - 8; // Position above cursor
+        // Vertical: keep the tooltip's bottom within the layout area so it never
+        // spills past the bottom edge. If it would, flip it above the cursor; let
+        // it extend upward (the modal has room above) but never above the viewport.
+        const maxTop = containerRect.height - tooltipHeight - 8; // relative to container
+        if (top > maxTop) {
+            top = mousePos.y - tooltipHeight - 8; // flip above the cursor
         }
-
-        // Ensure tooltip stays within container bounds
-        left = Math.max(8, Math.min(left, containerRect.width - tooltipWidth - 8));
-        top = Math.max(8, Math.min(top, containerRect.height - tooltipHeight - 8));
+        const minTop = 8 - containerRect.top; // viewport top, relative to container
+        top = Math.min(top, maxTop);
+        top = Math.max(top, minTop);
 
         return { left, top };
     };
@@ -186,7 +191,7 @@ export function QcLayout({ layout, metrics }) {
     return (
         <div
             ref={containerRef}
-            className="relative w-full overflow-hidden flex justify-center mx-auto"
+            className="relative w-full flex justify-center mx-auto"
             style={{
                 aspectRatio: `${viewBoxWidth} / ${viewBoxHeight}`,
                 maxWidth: `${maxRenderWidth}px`,
@@ -228,26 +233,40 @@ export function QcLayout({ layout, metrics }) {
                 })}
                 {resonator && (() => {
                     const hover = hoveredEdge === resonator.id;
-                    const barHeight = 70;
+                    const barHeight = 90;
+                    const barColor = getColor(resonatorMetric, resonator.id, 3, thresholdResonator);
                     return (
-                        <motion.rect
-                            x={resonator.x1}
-                            y={-resonator.y - barHeight / 2}
-                            width={resonator.x2 - resonator.x1}
-                            height={barHeight}
-                            rx={10}
-                            fill={DEFAULT_NODE_COLOR}
-                            initial={{ scaleY: 1 }}
-                            animate={{ scaleY: hover ? 1.15 : 1 }}
+                        <motion.g
+                            initial={{ scale: 1 }}
+                            animate={{ scale: hover ? 1.04 : 1 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                             style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
                             onMouseEnter={() => {
                                 setHoveredEdge(resonator.id);
-                                setTooltip({ type: 'resonator', content: resonator.label || 'Resonator', details: 'Connectivity: one-to-all' });
+                                setTooltip(buildTooltip('resonator', resonatorMetric, resonator.id, resonatorMetricFormatted, `Resonator: ${resonator.id}`));
                             }}
                             onMouseLeave={() => { setHoveredEdge(null); setTooltip(null); }}
                             className={hover ? 'cursor-pointer filter drop-shadow-lg' : 'cursor-pointer'}
-                        />
+                        >
+                            <rect
+                                x={resonator.x1}
+                                y={-resonator.y - barHeight / 2}
+                                width={resonator.x2 - resonator.x1}
+                                height={barHeight}
+                                rx={10}
+                                fill={barColor}
+                            />
+                            <text
+                                x={(resonator.x1 + resonator.x2) / 2}
+                                y={-resonator.y}
+                                fill="#fff"
+                                fontFamily="monospace"
+                                fontSize={40}
+                                fontWeight="bold"
+                                textAnchor="middle"
+                                dominantBaseline="central"
+                            >{resonator.id}</text>
+                        </motion.g>
                     );
                 })()}
                 {nodes.map(n => {
@@ -298,9 +317,6 @@ export function QcLayout({ layout, metrics }) {
                     }}
                 >
                     <div className="bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm border border-slate-600/50 rounded-lg p-3 shadow-xl">
-                        {/* Arrow pointing to the element */}
-                        <div className="absolute -top-1 left-4 w-2 h-2 bg-slate-800 border-l border-t border-slate-600/50 rotate-45"></div>
-
                         {/* Header with icon */}
                         <div className="flex items-center gap-2 mb-2">
                             <div className={`w-2 h-2 rounded-full ${tooltip.type === 'node' ? 'bg-blue-400' : 'bg-purple-400'}`}></div>

@@ -26,10 +26,13 @@ export const ModalContent = (props) => {
     const [metricsState, setMetricsState] = useState({
         qubitMetric: '',
         couplerMetric: '',
+        resonatorMetric: '',
         thresholdQubit: 0.0,
         thresholdCoupler: 0.0,
+        thresholdResonator: 0.0,
         thresholdCouplerValue: 0.0,
         thresholdQubitValue: 0.0,
+        thresholdResonatorValue: 0.0,
     });
 
     const [viewState, setViewState] = useState({
@@ -56,6 +59,25 @@ export const ModalContent = (props) => {
     const qubitMetricOptions = deviceConfig.qubitOptions || getDeviceMetricsConfig('default').qubitOptions;
     const couplerMetricOptions = deviceConfig.couplerOptions || getDeviceMetricsConfig('default').couplerOptions;
 
+    // Star layouts carry a central `resonator`. When present, derive the available
+    // resonator-level metrics directly from the calibration data: any metric that
+    // has an entry keyed by the resonator's id. (Backends don't share a fixed list
+    // of resonator metric names, so deriving them is more robust than hardcoding.)
+    const layout = QC_LAYOUTS[props.device_id.toLowerCase()];
+    const resonator = layout?.resonator;
+    const resonatorMetricOptions = (resonator && calibrationData)
+        ? Object.keys(calibrationData)
+            .filter(metric => {
+                const entries = calibrationData[metric];
+                return entries && typeof entries === 'object'
+                    && Object.prototype.hasOwnProperty.call(entries, resonator.id);
+            })
+            .map(metric => ({
+                value: metric,
+                name: metric.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+            }))
+        : [];
+
     return (
         <CCard style={{ overflow: 'scroll' }} className='text-on-white !m-0 lg:mx-[100px] flex flex-col overflow-scroll lg:!overflow-auto max-h-[80vh] '>
             <CCardTitle className="!font-bold text-on-white">{props.name}</CCardTitle>
@@ -72,6 +94,8 @@ export const ModalContent = (props) => {
                         devicesWithStatus={props.devicesWithStatus}
                         qubitMetricOptions={qubitMetricOptions}
                         couplerMetricOptions={couplerMetricOptions}
+                        resonatorMetricOptions={resonatorMetricOptions}
+                        hasResonator={!!resonator}
                         deviceData={{ ...props }}
                     />
 
@@ -99,17 +123,20 @@ export const ModalContent = (props) => {
                             </CTabItem>
                             <CTabItem value="layout">
                                 <div className='flex justify-center items-center w-full'>
-                                    {QC_LAYOUTS[props.device_id.toLowerCase()] ? (
+                                    {layout ? (
                                         <QcLayout
-                                            layout={QC_LAYOUTS[props.device_id.toLowerCase()]}
+                                            layout={layout}
                                             metrics={{
                                                 calibrationData,
                                                 qubitMetric: metricsState.qubitMetric,
                                                 couplerMetric: metricsState.couplerMetric,
+                                                resonatorMetric: metricsState.resonatorMetric,
                                                 qubitMetricFormatted: qubitMetricOptions.find(m => m.value === metricsState.qubitMetric)?.name || metricsState.qubitMetric,
                                                 couplerMetricFormatted: couplerMetricOptions.find(m => m.value === metricsState.couplerMetric)?.name || metricsState.couplerMetric,
+                                                resonatorMetricFormatted: resonatorMetricOptions.find(m => m.value === metricsState.resonatorMetric)?.name || metricsState.resonatorMetric,
                                                 thresholdQubit: metricsState.thresholdQubitValue,
                                                 thresholdCoupler: metricsState.thresholdCouplerValue,
+                                                thresholdResonator: metricsState.thresholdResonatorValue,
                                             }}
                                         />
                                     ) : null}

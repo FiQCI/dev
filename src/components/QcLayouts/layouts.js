@@ -107,8 +107,9 @@ const q50Edges = [
 //     O  O  O ... (12 qubits)
 //
 // `RESONATOR_ID` must match the resonator's name in the calibration coupler keys
-// (e.g. "QB1__COMP_R"). Change it here if the backend uses a different name.
-const RESONATOR_ID = 'COMP_R';
+// (e.g. "QB1__COMP_R_1") and in any resonator-level metrics. It is also shown as
+// the label on the resonator bar. Change it here if the backend uses another name.
+const RESONATOR_ID = 'COMP_R_1';
 const vlqSpacing = 120;
 const vlqCols = 12; // 12 qubits per row, 24 total
 const vlqDiamond = vlqSpacing * 0.45; // half a node's diagonal, for bar overlap
