@@ -15,7 +15,10 @@ const NODE_UNITS = 90;
 const MAX_NODE_PX = 48;
 
 export function QcLayout({ layout, metrics }) {
-    const { spacing, nodes, edges } = layout;
+    const { spacing, nodes, edges, resonator } = layout;
+    // Star layouts (with a central resonator) render qubits as upright squares;
+    // lattice layouts render them as 45°-rotated diamonds.
+    const nodeRotation = resonator ? 0 : 45;
     const {
         calibrationData, qubitMetric, couplerMetric,
         qubitMetricFormatted, couplerMetricFormatted, thresholdQubit, thresholdCoupler,
@@ -145,27 +148,50 @@ export function QcLayout({ layout, metrics }) {
     // Build coordinate map directly from nodes
     const coordMap = Object.fromEntries(nodes.map(n => [n.id, n]));
 
-    // Compute dynamic bounds
+    // Resolve an edge's two endpoints. A star-layout edge connects a qubit to the
+    // central resonator: that endpoint isn't a node, so it maps to the point on the
+    // resonator bar directly above/below the qubit (a vertical coupler).
+    const endpoint = (id, other) => {
+        if (resonator && id === resonator.id) return { x: coordMap[other].x, y: resonator.y };
+        return coordMap[id];
+    };
+
+    // Compute dynamic bounds (include the resonator bar if present)
     const xs = nodes.map(n => n.x);
     const ys = nodes.map(n => n.y);
-    const minX = Math.min(...xs) - spacing;
-    const maxX = Math.max(...xs) + spacing;
-    const minY = Math.min(...ys) - spacing;
-    const maxY = Math.max(...ys) + spacing;
+    if (resonator) {
+        xs.push(resonator.x1, resonator.x2);
+        ys.push(resonator.y);
+    }
+    // Margin around the outermost nodes. Star layouts pack tightly (upright
+    // squares), so they only need a node-sized margin; lattice layouts keep a
+    // full spacing of breathing room.
+    const margin = resonator ? NODE_UNITS * 0.75 : spacing;
+    const minX = Math.min(...xs) - margin;
+    const maxX = Math.max(...xs) + margin;
+    const minY = Math.min(...ys) - margin;
+    const maxY = Math.max(...ys) + margin;
     const viewBoxWidth = maxX - minX;
     const viewBoxHeight = maxY - minY;
     const viewBox = `${minX} ${-maxY} ${viewBoxWidth} ${viewBoxHeight}`;
 
     // Cap the rendered size so an SVG unit never maps to more pixels than
     // MAX_NODE_PX / NODE_UNITS — i.e. nodes/couplers stay the same on-screen size
-    // across layouts. Use the larger viewBox dimension so neither axis overshoots.
-    const maxWidth = (MAX_NODE_PX / NODE_UNITS) * Math.max(viewBoxWidth, viewBoxHeight);
+    // across layouts. The container matches the viewBox aspect ratio so a wide,
+    // short layout (e.g. the star) isn't padded out to a tall square.
+    const pxPerUnit = MAX_NODE_PX / NODE_UNITS;
+    const maxRenderWidth = pxPerUnit * viewBoxWidth;
+    const maxRenderHeight = pxPerUnit * viewBoxHeight;
 
     return (
         <div
             ref={containerRef}
-            className="relative w-full aspect-square overflow-hidden flex justify-center"
-            style={{ maxHeight: `${maxWidth}px` }}
+            className="relative w-full overflow-hidden flex justify-center mx-auto"
+            style={{
+                aspectRatio: `${viewBoxWidth} / ${viewBoxHeight}`,
+                maxWidth: `${maxRenderWidth}px`,
+                maxHeight: `${maxRenderHeight}px`,
+            }}
             onMouseMove={handleMouseMove}
             onMouseLeave={() => { setHoveredNode(null); setHoveredEdge(null); setTooltip(null); }}
         >
@@ -173,11 +199,10 @@ export function QcLayout({ layout, metrics }) {
                 viewBox={viewBox}
                 preserveAspectRatio="xMidYMid meet"
                 className="w-full h-full"
-                style={{ maxWidth: `${maxWidth}px`, maxHeight: `${maxWidth}px` }}
             >
                 {edges.map(([a, b]) => {
-                    const A = coordMap[a];
-                    const B = coordMap[b];
+                    const A = endpoint(a, b);
+                    const B = endpoint(b, a);
                     const key = `${a}-${b}`;
                     const hover = hoveredEdge === key;
                     const edgeColor = getColor(couplerMetric, couplerKey(a, b), 2, thresholdCoupler);
@@ -201,6 +226,30 @@ export function QcLayout({ layout, metrics }) {
                         />
                     );
                 })}
+                {resonator && (() => {
+                    const hover = hoveredEdge === resonator.id;
+                    const barHeight = 70;
+                    return (
+                        <motion.rect
+                            x={resonator.x1}
+                            y={-resonator.y - barHeight / 2}
+                            width={resonator.x2 - resonator.x1}
+                            height={barHeight}
+                            rx={10}
+                            fill={DEFAULT_NODE_COLOR}
+                            initial={{ scaleY: 1 }}
+                            animate={{ scaleY: hover ? 1.15 : 1 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                            style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+                            onMouseEnter={() => {
+                                setHoveredEdge(resonator.id);
+                                setTooltip({ type: 'resonator', content: resonator.label || 'Resonator', details: 'Connectivity: one-to-all' });
+                            }}
+                            onMouseLeave={() => { setHoveredEdge(null); setTooltip(null); }}
+                            className={hover ? 'cursor-pointer filter drop-shadow-lg' : 'cursor-pointer'}
+                        />
+                    );
+                })()}
                 {nodes.map(n => {
                     const hover = hoveredNode === n.id;
                     const nodeColor = getColor(qubitMetric, n.id, 1, thresholdQubit);
@@ -217,7 +266,7 @@ export function QcLayout({ layout, metrics }) {
                                 onMouseLeave={() => { setHoveredNode(null); setTooltip(null); }}
                                 className={hover ? 'cursor-pointer filter drop-shadow-lg' : 'cursor-pointer'}
                             >
-                                <g transform="rotate(45)">
+                                <g transform={`rotate(${nodeRotation})`}>
                                     <rect x={-45} y={-45} width={90} height={90} rx={10} fill={nodeColor} />
                                     <text
                                         x={0} y={0}
@@ -227,7 +276,7 @@ export function QcLayout({ layout, metrics }) {
                                         fontWeight="bold"
                                         textAnchor="middle"
                                         dominantBaseline="central"
-                                        transform="rotate(-45)"
+                                        transform={`rotate(${-nodeRotation})`}
                                     >{n.id}</text>
                                 </g>
                             </motion.g>
