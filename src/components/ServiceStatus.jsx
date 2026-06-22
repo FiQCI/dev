@@ -6,6 +6,7 @@ import { mdiInformation, mdiClose, mdiAlert } from '@mdi/js';
 import { CCard, CCardTitle, CCardContent, CIcon, CButton, CSelect } from '@cscfi/csc-ui-react';
 import { StatusModal } from './StatusModal/StatusModal';
 import { BookingModal } from './bookingCalendar.jsx';
+import { API_BASE_URL } from '../config/api';
 
 const ALERT_STYLES = {
   warning: { bg: 'bg-orange-200', icon: mdiAlert },
@@ -58,8 +59,8 @@ const StatusCard = (props) => {
 }
 
 export const ServiceStatus = (props) => {
-  const { status: statusList } = useStatus("https://fiqci-backend.2.rahtiapp.fi/devices/healthcheck");
-  const { bookingData: bookingData } = useBookings("https://fiqci-backend.2.rahtiapp.fi/bookings")
+  const { status: statusList } = useStatus(`${API_BASE_URL}/devices/healthcheck`);
+  const { bookingData: bookingData } = useBookings(`${API_BASE_URL}/bookings`)
   const qcs = props["quantum-computers"] || [];
 
   const devicesWithStatus = (qcs.length === 0 || !Array.isArray(statusList))
@@ -102,6 +103,7 @@ export const ServiceStatus = (props) => {
   }, []);
 
   const handleCardClick = (qc) => {
+    setModalProps({ ...qc, devicesWithStatus });
     setModalProps({ ...qc, devicesWithStatus });
     setModalOpen(true);
   };
@@ -159,6 +161,8 @@ export const ServiceStatus = (props) => {
         ))}
         
         
+        
+        
       </div>
       {bookingModalOpen && (
         <BookingModal bookingData={bookingData} name={"Reservations"} isModalOpen={bookingModalOpen} setIsModalOpen={setBookingModalOpen} />
@@ -167,6 +171,7 @@ export const ServiceStatus = (props) => {
       {modalOpen && (
         <StatusModal {...modalProps} isModalOpen={modalOpen} setIsModalOpen={setModalOpen} />
       )}
+      
       
     </div>
   );
