@@ -6,7 +6,8 @@ import { mdiInformation, mdiClose, mdiAlert } from '@mdi/js';
 import { CCard, CCardTitle, CCardContent, CIcon, CButton, CSelect } from '@cscfi/csc-ui-react';
 import { StatusModal } from './StatusModal/StatusModal';
 import { BookingModal } from './bookingCalendar.jsx';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL } from '../config/api.js';
+import { AlertBanner } from './AlertBanner.jsx';
 
 const StatusCard = (props) => {
   const isOnline = props.health;
@@ -89,20 +90,8 @@ export const ServiceStatus = (props) => {
     setModalProps({ ...qc, devicesWithStatus });
     setModalOpen(true);
   };
-  // Determine alert color based on props.alert.type
-  const alertType = props.alert?.type?.toLowerCase();
-  let icon = '';
-  let alertBg = '';
-  if (alertType === 'warning') {
-    alertBg = 'bg-orange-200';
-    icon = mdiAlert;
-  } else if (alertType === 'error') {
-    alertBg = 'bg-red-200';
-    icon = mdiClose;
-  } else {
-    alertBg = 'bg-sky-200';
-    icon = mdiInformation;
-  }
+  // Support both a single `alert` object and a list of `alerts`.
+  const alerts = props.alerts ?? (props.alert ? [props.alert] : []);
 
   return (
     <div className="flex gap-6 flex-col sm:flex-col items-stretch text-on-white">
@@ -113,12 +102,13 @@ export const ServiceStatus = (props) => {
       <p className='text-[16px]'>
         {props.lumi?.desc} <a href={props.lumi?.link?.href} className="hover:underline text-sky-800">{props.lumi?.link?.title}</a>.
       </p>
-      <div className={`flex flex-row gap-4 w-full p-3 rounded-md ${alertBg} items-start sm:items-center`}>
-        <CIcon key={icon} path={icon} />
-        <p className='text-[16px]'>
-          {props.alert?.type ? props.alert?.text : 'Loading...'}
-        </p>
-      </div>
+      {alerts.length > 0 && (
+        <div className='flex flex-col gap-3'>
+          {alerts.map((alert, index) => (
+            <AlertBanner key={index} {...alert} />
+          ))}
+        </div>
+      )}
       <div className='pt-[24px] flex flex-col gap-6 mb-6 justify-start'>
         <h2 className='text-on-white'>Reservations</h2>
         <p>
@@ -128,7 +118,7 @@ export const ServiceStatus = (props) => {
         <CButton className='w-32' onClick={() => setBookingModalOpen(true)}>View Reservations</CButton>
       </div>
       
-      <div className='flex flex-col sm:flex-row gap-8'>
+      <div className='flex flex-col sm:flex-row gap-4 sm:gap-20'>
         <h2 className='text-on-white'>Devices</h2>
         <CSelect
           hideDetails={true}
