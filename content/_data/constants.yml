@@ -277,6 +277,7 @@ cookie_consent:
       qubits: 24
       basis: "PRX, CZ, MOVE"
       topology: "Star"
+      pulse: "True"
       device_id: "vlq"
 
 "/cookies/":
