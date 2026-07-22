@@ -263,12 +263,14 @@ cookie_consent:
       qubits: 53
       basis: "PRX, CZ"
       topology: "Square grid"
+      pulse: "True"
       device_id: "Q50"
     
     - name: Aalto Q20
       qubits: 20
       basis: "PRX, CZ"
       topology: "Square grid"
+      pulse: "True"
       device_id: "Q20"
 
     - name: VLQ
