@@ -276,7 +276,7 @@ cookie_consent:
       basis: "PRX, CZ, MOVE"
       topology: "Star"
       pulse: "True"
-      device_id: "vlq"
+      device_id: "VLQ"
 
 "/cookies/":
   title: Cookie Policy
