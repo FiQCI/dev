@@ -122,8 +122,6 @@ export function QcLayout({ layout, metrics }) {
         if (!containerRef.current || !tooltip) return { left: 0, top: 0 };
 
         const containerRect = containerRef.current.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
 
         let tooltipWidth = 300; // rough estimate
         let tooltipHeight = 150; // rough estimate
@@ -143,7 +141,7 @@ export function QcLayout({ layout, metrics }) {
         if (left > maxLeft) {
             left = mousePos.x - tooltipWidth - 8; // flip to the left of the cursor
         }
-        const minLeft = 8 - containerRect.left; // viewport left, relative to container
+        const minLeft = 8; // keep the tooltip's left edge inside the layout area
         left = Math.min(left, maxLeft);
         left = Math.max(left, minLeft);
 
@@ -154,7 +152,7 @@ export function QcLayout({ layout, metrics }) {
         if (top > maxTop) {
             top = mousePos.y - tooltipHeight - 8; // flip above the cursor
         }
-        const minTop = 8 - containerRect.top; // viewport top, relative to container
+        const minTop = 8; // keep the tooltip's top edge inside the layout area
         top = Math.min(top, maxTop);
         top = Math.max(top, minTop);
 
@@ -202,8 +200,12 @@ export function QcLayout({ layout, metrics }) {
     return (
         <div
             ref={containerRef}
-            className="relative w-full aspect-square overflow-hidden flex justify-center items-center mx-auto"
-            style={{ maxWidth: `min(${maxWidth}px, 60vh)`, maxHeight: `min(${maxWidth}px, 60vh)` }}
+            className="relative w-full overflow-hidden flex justify-center items-center mx-auto"
+            style={{
+                aspectRatio: `${viewBoxWidth} / ${viewBoxHeight}`,
+                maxWidth: `${maxRenderWidth}px`,
+                maxHeight: `${maxRenderHeight}px`,
+            }}
             onMouseMove={handleMouseMove}
             onMouseLeave={() => { setHoveredNode(null); setHoveredEdge(null); setTooltip(null); }}
         >
