@@ -16,8 +16,6 @@ export const SideBar = (props) => {
         devicesWithStatus,
         qubitMetricOptions,
         couplerMetricOptions,
-        resonatorMetricOptions,
-        hasResonator,
         deviceData,
     } = props;
 
@@ -25,7 +23,6 @@ export const SideBar = (props) => {
 
     const [qubitInputValue, setQubitInputValue] = useState('');
     const [couplerInputValue, setCouplerInputValue] = useState('');
-    const [resonatorInputValue, setResonatorInputValue] = useState('');
 
     const [copySuccess, setCopySuccess] = useState(false);
 
@@ -70,26 +67,6 @@ export const SideBar = (props) => {
         }
     }, [metricsState.couplerMetric, metricsState.thresholdCoupler]);
 
-    useEffect(() => {
-        if (metricsState.resonatorMetric && calibrationData) {
-            const resonatorStats = getMetricStatistics(calibrationData, metricsState.resonatorMetric, 3);
-            if (resonatorStats) {
-                const isLowerBetter = metricsState.resonatorMetric.includes("error");
-                const worst = isLowerBetter ? resonatorStats.best : resonatorStats.worst;
-                const best = isLowerBetter ? resonatorStats.worst : resonatorStats.best;
-                const range = parseFloat(best) - parseFloat(worst);
-                const thresholdValue = parseFloat(worst) + (metricsState.thresholdResonator * range);
-                updateMetricsState('thresholdResonatorValue', thresholdValue);
-
-                // Update input display value
-                const displayValue = resonatorStats.unit === 's' ? (thresholdValue * 1e6).toFixed(2) :
-                    (resonatorStats.unit === '' || resonatorStats.unit === '%') ? (thresholdValue * 100).toFixed(2) :
-                        thresholdValue.toFixed(3);
-                setResonatorInputValue(displayValue);
-            }
-        }
-    }, [metricsState.resonatorMetric, metricsState.thresholdResonator]);
-
     return (
         <div className='flex flex-col pb-4 mr-[50px] border-b-2 md:border-b-0 md:border-r-2 border-gray-400 col-span-1'>
             <DeviceStatus deviceData={deviceData} devicesWithStatus={devicesWithStatus} />
@@ -105,16 +82,10 @@ export const SideBar = (props) => {
                     couplerMetricOptions={couplerMetricOptions.filter(opt =>
                         Object.prototype.hasOwnProperty.call(calibrationData ?? {}, opt.value)
                     )}
-                    resonatorMetricOptions={(resonatorMetricOptions ?? []).filter(opt =>
-                        Object.prototype.hasOwnProperty.call(calibrationData ?? {}, opt.value)
-                    )}
-                    hasResonator={hasResonator}
                     qubitInputValue={qubitInputValue}
                     setQubitInputValue={setQubitInputValue}
                     couplerInputValue={couplerInputValue}
                     setCouplerInputValue={setCouplerInputValue}
-                    resonatorInputValue={resonatorInputValue}
-                    setResonatorInputValue={setResonatorInputValue}
                 />
             }
             {activeTab === "raw" &&

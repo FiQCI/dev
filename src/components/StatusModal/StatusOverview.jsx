@@ -21,7 +21,7 @@ export const Overview = (props) => {
     const deviceInfoData = props.deviceInfoData;
     const limitationsData = deviceInfoData?.job_policy || {};
 
-    const deviceName = deviceInfoData?.name || '';
+    const deviceName = deviceInfoData?.name || props.device_id || '';
     const { overview } = getDeviceMetricsConfig(deviceName);
 
     const limitations = {

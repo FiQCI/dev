@@ -21,9 +21,9 @@ export function QcLayout({ layout, metrics }) {
     // lattice layouts render them as 45°-rotated diamonds.
     const nodeRotation = resonator ? 0 : 45;
     const {
-        calibrationData, qubitMetric, couplerMetric, resonatorMetric,
-        qubitMetricFormatted, couplerMetricFormatted, resonatorMetricFormatted,
-        thresholdQubit, thresholdCoupler, thresholdResonator,
+        calibrationData, qubitMetric, couplerMetric,
+        qubitMetricFormatted, couplerMetricFormatted,
+        thresholdQubit, thresholdCoupler,
     } = metrics;
 
     const [hoveredNode, setHoveredNode] = useState(null);
@@ -45,10 +45,20 @@ export function QcLayout({ layout, metrics }) {
         return entry?.unit || '';
     };
 
-    // Resolve a coupler key from the two endpoints (try both orderings)
+    // Resolve a coupler key from the two endpoints (try both orderings).
     const couplerKey = (a, b) => {
         if (getMetricValue(couplerMetric, `${a}__${b}`) !== null) return `${a}__${b}`;
-        return `${b}__${a}`;
+        if (getMetricValue(couplerMetric, `${b}__${a}`) !== null) return `${b}__${a}`;
+        // Star MOVE/CZ gates routed through the resonator to a fixed anchor qubit
+        // are keyed QBx__RES__QBanchor. The edge is (QBx, RES): find the matching
+        // key so the gate's value renders on that edge (and shows on hover).
+        if (resonator && calibrationData?.[couplerMetric]) {
+            const qubit = a === resonator.id ? b : a;
+            const prefix = `${qubit}__${resonator.id}__`;
+            const match = Object.keys(calibrationData[couplerMetric]).find(k => k.startsWith(prefix));
+            if (match) return match;
+        }
+        return `${a}__${b}`;
     };
 
     // Color for a metric value. dim: 1 = qubit, 2 = coupler, 3 = resonator.
@@ -257,7 +267,7 @@ export function QcLayout({ layout, metrics }) {
                             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                             onMouseEnter={() => {
                                 setHoveredEdge(key);
-                                setTooltip(buildTooltip('edge', couplerMetric, couplerKey(a, b), couplerMetricFormatted, `Coupler: ${a}__${b}`));
+                                setTooltip(buildTooltip('edge', couplerMetric, couplerKey(a, b), couplerMetricFormatted, `Coupler: ${couplerKey(a, b)}`));
                             }}
                             onMouseLeave={() => { setHoveredEdge(null); setTooltip(null); }}
                             className={hover ? 'cursor-pointer filter drop-shadow-md' : 'cursor-pointer'}
@@ -267,7 +277,9 @@ export function QcLayout({ layout, metrics }) {
                 {resonator && (() => {
                     const hover = hoveredEdge === resonator.id;
                     const barHeight = 90;
-                    const barColor = getColor(resonatorMetric, resonator.id, 3, thresholdResonator);
+                    // The resonator has no dropdown of its own: its T1/T2 share the
+                    // qubit keys, so the bar follows the selected qubit metric.
+                    const barColor = getColor(qubitMetric, resonator.id, 1, thresholdQubit);
                     return (
                         <motion.g
                             initial={{ scale: 1 }}
@@ -276,7 +288,7 @@ export function QcLayout({ layout, metrics }) {
                             style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
                             onMouseEnter={() => {
                                 setHoveredEdge(resonator.id);
-                                setTooltip(buildTooltip('resonator', resonatorMetric, resonator.id, resonatorMetricFormatted, `Resonator: ${resonator.id}`));
+                                setTooltip(buildTooltip('resonator', qubitMetric, resonator.id, qubitMetricFormatted, `Resonator: ${resonator.id}`));
                             }}
                             onMouseLeave={() => { setHoveredEdge(null); setTooltip(null); }}
                             className={hover ? 'cursor-pointer filter drop-shadow-lg' : 'cursor-pointer'}
