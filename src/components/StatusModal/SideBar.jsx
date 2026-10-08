@@ -16,6 +16,7 @@ export const SideBar = (props) => {
         deviceInfoData,
         devicesWithStatus,
         statusLoading,
+        queueLoading,
         calibrationLoading,
         calibrationError,
         dataLoading,
@@ -74,7 +75,7 @@ export const SideBar = (props) => {
 
     return (
         <div className='flex flex-col pb-4 mr-[50px] border-b-2 md:border-b-0 md:border-r-2 border-gray-400 col-span-1'>
-            <DeviceStatus deviceData={deviceData} devicesWithStatus={devicesWithStatus} statusLoading={statusLoading} />
+            <DeviceStatus deviceData={deviceData} devicesWithStatus={devicesWithStatus} statusLoading={statusLoading} queueLoading={queueLoading} />
 
             {(activeTab === "layout" || activeTab === "graphical") && (
                 calibrationLoading ? (

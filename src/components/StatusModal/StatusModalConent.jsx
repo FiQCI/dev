@@ -95,6 +95,7 @@ export const ModalContent = (props) => {
                         deviceInfoData={deviceInfoData}
                         devicesWithStatus={props.devicesWithStatus}
                         statusLoading={props.statusLoading}
+                        queueLoading={props.queueLoading}
                         calibrationLoading={calibrationLoading}
                         calibrationError={calibrationError}
                         dataLoading={dataLoading}
