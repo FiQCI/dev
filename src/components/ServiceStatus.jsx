@@ -2,12 +2,14 @@ import React, { useCallback, useMemo, useState } from 'react'
 
 import { useStatus } from '../hooks/useStatus'
 import { useBookings } from '../hooks/useBookings.jsx';
+import { useQueues } from '../hooks/useQueues.jsx';
 import { mdiInformation, mdiClose, mdiAlert, mdiRefresh, mdiArrowRight, mdiOpenInNew, mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 import { CCard, CCardTitle, CCardContent, CIcon, CIconButton, CButton, CSelect, CAccordion, CAccordionItem } from '@cscfi/csc-ui-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { A11y, Keyboard } from 'swiper';
 import 'swiper/css';
 import { prependBaseURL, isExternal } from '../utils/url';
+import { formatQueue } from '../utils/queue';
 import { StatusModal } from './StatusModal/StatusModal';
 import { BookingModal } from './bookingCalendar.jsx';
 import { API_BASE_URL } from '../config/api.js';
@@ -28,6 +30,7 @@ const StatusCard = (props) => {
           <p className=""><strong>Basis gates:</strong> {props.basis}</p>
           <p className=""><strong>Topology:</strong> {props.topology}</p>
           <p className=""><strong>Pulse access:</strong> {props.pulse === "True" ? "Yes" : "No"}</p>
+          <p className=""><strong>Queue:</strong> {formatQueue(props.queue, props.queueLoading)}</p>
         </div>
 
         <div className='flex flex-col gap-0 text-[14px]'>
@@ -110,17 +113,24 @@ export const ServiceStatus = (props) => {
   const { status: statusList, loading: statusLoading, refetch: refetchStatus } = useStatus(`${API_BASE_URL}/devices/healthcheck`);
   const { bookingData: bookingData } = useBookings(`${API_BASE_URL}/bookings`)
   const qcs = props["quantum-computers"] || [];
+  const { queues, loading: queueLoading, refetch: refetchQueues } = useQueues(`${API_BASE_URL}/queue`);
 
-  const devicesWithStatus = (qcs.length === 0 || !Array.isArray(statusList))
-    ? qcs
-    : qcs.map(device => {
-      const deviceStatus = statusList.find(({ name }) => name === device.device_id);
+  const devicesWithStatus = qcs.map(device => {
+    const deviceStatus = Array.isArray(statusList)
+      ? statusList.find(({ name }) => name === device.device_id)
+      : undefined;
 
-      return {
-        ...device,
-        health: deviceStatus?.health ?? false,
-      };
-    });
+    return {
+      ...device,
+      health: deviceStatus?.health ?? false,
+      queue: queues[device.device_id?.toLowerCase()] ?? null,
+    };
+  });
+
+  const refreshAll = useCallback(() => {
+    refetchStatus();
+    refetchQueues();
+  }, [refetchStatus, refetchQueues]);
 
   const [bookingModalOpen, setBookingModalOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false);
@@ -221,8 +231,8 @@ export const ServiceStatus = (props) => {
         <CButton
           className='w-min self-start sm:self-center'
           ghost
-          loading={statusLoading}
-          onClick={refetchStatus}
+          loading={statusLoading || queueLoading}
+          onClick={refreshAll}
         >
           Refresh
           <CIcon path={mdiRefresh} />
@@ -231,7 +241,7 @@ export const ServiceStatus = (props) => {
 
       <div className='pb-[60px] grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2600px]:grid-cols-4 w-full gap-[24px]'>
         {sortedDevices.map((qc, index) => (
-          <StatusCard key={qc.device_id || index} {...qc} statusLoading={statusLoading} onClick={() => handleCardClick(qc)} />
+          <StatusCard key={qc.device_id || index} {...qc} statusLoading={statusLoading} queueLoading={queueLoading} onClick={() => handleCardClick(qc)} />
         ))}
       </div>
       {bookingModalOpen && (
@@ -243,6 +253,7 @@ export const ServiceStatus = (props) => {
           {...modalProps}
           devicesWithStatus={devicesWithStatus}
           statusLoading={statusLoading}
+          queueLoading={queueLoading}
           isModalOpen={modalOpen}
           setIsModalOpen={setModalOpen}
         />
