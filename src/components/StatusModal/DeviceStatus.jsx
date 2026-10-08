@@ -1,9 +1,11 @@
 import React from 'react';
 import { StatusPillLoading } from '../Loading';
+import { formatQueue } from '../../utils/queue';
 
 export const DeviceStatus = (props) => {
 
-    const { deviceData, devicesWithStatus, statusLoading } = props;
+    const { deviceData, devicesWithStatus, statusLoading, queueLoading } = props;
+    const device = devicesWithStatus.find(d => d.device_id === deviceData.device_id);
 
     return (
         <>
@@ -12,13 +14,14 @@ export const DeviceStatus = (props) => {
                 <p className="pb-2"><strong>Basis gates:</strong> {deviceData.basis}</p>
                 <p className="pb-2"><strong>Topology:</strong> {deviceData.topology}</p>
                 <p className="pb-2"><strong>Pulse access:</strong> {deviceData.pulse === "True" ? "Yes" : "No"}</p>
+                <p className="pb-2"><strong>Queue:</strong> {formatQueue(device?.queue, queueLoading)}</p>
             </div>
 
             <div className='flex flex-col gap-0 text-[14px] col-span-1 pb-8'>
                 <strong>Service status:</strong>
                 {statusLoading ? (
                     <StatusPillLoading />
-                ) : devicesWithStatus.find(d => d.device_id === deviceData.device_id)?.health ? (
+                ) : device?.health ? (
                     <div className='text-center text-[#204303] bg-[#B9DC9C] border-[0.5px] border-[#204303] rounded-[100px] w-[88px] h-[25px]'>
                         <p className='font-bold text-[14px]'>Online</p>
                     </div>
